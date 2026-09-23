@@ -117,11 +117,11 @@ table.ledger{width:100%;border-collapse:separate;border-spacing:0 2px;margin-bot
 .ledger tbody tr:nth-child(even) td{background:var(--row-alt)}
 .ledger tbody tr:active td{background:#CBD2CD}
 .ledger td.d{width:54px;white-space:nowrap;color:#000}
-.ledger td.n span{display:block;overflow-wrap:anywhere}
+.ledger td.n>span{display:block;overflow-wrap:anywhere}
 .ledger td.n small{display:block;color:#3F4944;font-size:12.5px;margin-top:2px}
 .ledger td.num{text-align:right;white-space:nowrap}
 .ledger td.num small{display:block;color:#3F4944;font-size:12.5px}
-.ledger tr.unrev td.n span{font-weight:700}
+.ledger tr.unrev td.n>span{font-weight:700}
 .ledger tr.unrev td.d::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--focus);margin-right:5px;vertical-align:1px}
 .ledger .nothing td{cursor:default;color:#3F4944;font-style:italic}
 .ledger tbody tr.static{cursor:default}
@@ -199,11 +199,11 @@ nav.tabs button[aria-current="page"]{color:var(--ink)}
 .sheet .row2{display:grid;grid-template-columns:1fr 110px;gap:10px}
 .row2>*,label.f{min-width:0}
 input[type=date]{min-width:0;-webkit-appearance:none;appearance:none}
-.sheet .types{display:flex;flex-wrap:wrap;gap:6px}
-.sheet .types label{border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer}
-.sheet .types input{position:absolute;opacity:0;pointer-events:none}
-.sheet .types label:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
-.sheet .types label:has(input:focus-visible){outline:2px solid var(--focus)}
+.types{display:flex;flex-wrap:wrap;gap:6px}
+.types label{border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer}
+.types input{position:absolute;opacity:0;pointer-events:none}
+.types label:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
+.types label:has(input:focus-visible){outline:2px solid var(--focus)}
 .notice{background:#FFF4E5;border-radius:10px;padding:10px 12px;font-size:14px}
 .calc{font-size:14px;color:var(--muted)}
 .sheet .actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:8px;flex-wrap:wrap}
@@ -244,6 +244,25 @@ table.hon{width:100%;border-collapse:collapse;font-size:14px}
 .hon th,.hon td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
 .hon td.num,.hon th.num{text-align:right;white-space:nowrap}
 .tbl-wrap{overflow-x:auto}
+.chip{display:inline-block;border:1px solid;border-radius:99px;padding:0 7px;font-size:11.5px;font-weight:600;line-height:1.55;margin-right:5px;white-space:nowrap}
+.ledger td.n small.tags{display:flex;flex-wrap:wrap;gap:3px 0;align-items:center}
+.ledger td.n small.tags>span:last-child{color:#3F4944}
+.seg.wrap{flex-wrap:wrap}
+.verdict{border-radius:12px;padding:14px;margin:12px 0}
+.verdict h3{margin:0 0 4px;font-size:18px}
+.verdict.ok{background:#E3F2E9;color:#124D30}
+.verdict.mid{background:#FFF1D6;color:#6B4A00}
+.verdict.no{background:#FBE3E1;color:#7A1A13}
+.verdict.na{background:var(--row);color:var(--ink)}
+.recs{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.recs li{background:var(--paper);border-radius:12px;padding:12px 14px;border-left:4px solid var(--c,#66716B)}
+.recs b{display:block;margin-bottom:2px}
+.recs small{color:var(--muted);font-size:13px}
+.cmp{list-style:none;margin:0;padding:0}
+.cmp li{border-top:1px solid var(--line);padding:9px 0;display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14.5px}
+.cmp li:first-child{border-top:0}
+.cmp small{grid-column:1/-1;color:var(--muted);font-size:13px}
+.up{color:var(--exp)} .down{color:var(--inc)}
 /* deudas */
 .debts{list-style:none;margin:0;padding:0;display:grid;gap:2px}
 .debts li{background:var(--row);color:#000;padding:12px 14px}
@@ -351,7 +370,8 @@ details.more summary{cursor:pointer;color:var(--focus);font-weight:600;padding:1
 /* =====================================================================
    Datos base
    ===================================================================== */
-const APP_VERSION = '5 (septiembre 2026)';
+const APP_VERSION = 7;                       // debe coincidir con version.json
+const APP_VERSION_LABEL = '7 (septiembre 2026)';
 const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -752,7 +772,8 @@ function calendarEvents() {
     ev[id] = ev[id] ? { ...ev[id], amount: ev[id].amount + amount } : { id, title, date, amount: Math.round(amount) };
   };
   debtItems().forEach(d => d.entries.forEach(e => {
-    if (d.type === 'cuota') add(`card|${d.card}|${e.date}`, `Pago ${cardLabel(d.card)}`, e.date, e.amt);
+    if ((d.type === 'cuota' || d.type === 'tx') && d.card) add(`card|${d.card}|${e.date}`, `Pago ${cardLabel(d.card)}`, e.date, e.amt);
+    else if (d.type === 'tx') add(`txc|${d.id}|${e.date}`, `Cuota ${d.name}`, e.date, e.amt);
     else if (d.type === 'loan') add(`loan|${d.id}|${e.date}`, `Cuota ${d.name}`, e.date, e.amt);
   }));
   subsData().filter(sd => sd.active).forEach(sd => add(`sub|${sd.name}|${sd.next}`, `Renovación ${sd.name}`, sd.next, clpNow(sd.last)));
@@ -981,6 +1002,7 @@ function renderResumen() {
       <div class="sumline"><span>Gasto variable estimado (${P.daysLeft} día${P.daysLeft === 1 ? '' : 's'})</span><b class="money">−${fmtCLP(P.varLeft)}</b></div>
       <p class="note-small" style="margin:6px 0 0">Estimación: flujo actual más lo que falta de este mes. El gasto variable usa ${P.basedOnHistory ? 'tu promedio diario de los últimos meses' : 'tu ritmo de gasto de este mes (aún hay poca historia)'}.</p>
     </section>` : '',
+    buy: ym === ymNow() ? `<button class="review" data-act="go-buy" style="margin-top:12px">¿Me conviene una compra?</button>` : '',
     tc: tc ? `<button class="tcbox" data-act="go-cards"><span>Próximo pago de deudas${tc.nextYm ? ' (' + esc(monthOnly(tc.nextYm)) + ')' : ''}</span><b class="exp money">${fmtCLP(tc.next)}</b><span>Deuda total</span><b class="money">${fmtCLP(tc.debt)}</b></button>` : '',
     chart: `<section class="block"><h2>Últimos 6 meses</h2>${barChart(ym)}</section>`,
     cats: `<section class="block"><h2>Egresos por categoría</h2>${catBars(ym)}</section>`,
@@ -995,8 +1017,8 @@ function renderResumen() {
   const desk = matchMedia('(min-width:900px)').matches;
   const col = keys => keys.map(k => blocks[k] ? `<div class="r-${k}">${blocks[k]}</div>` : '').join('');
   $('#tab-resumen').innerHTML = (desk
-    ? `<div class="res2"><div>${col(['slip', 'rev', 'proj', 'tc', 'sav'])}</div><div>${col(['chart', 'cats', 'bud'])}</div></div>`
-    : `<div>${col(['slip', 'rev', 'proj', 'tc', 'chart', 'cats', 'bud', 'sav'])}</div>`) +
+    ? `<div class="res2"><div>${col(['slip', 'rev', 'proj', 'buy', 'tc', 'sav'])}</div><div>${col(['chart', 'cats', 'bud'])}</div></div>`
+    : `<div>${col(['slip', 'rev', 'proj', 'buy', 'tc', 'chart', 'cats', 'bud', 'sav'])}</div>`) +
     `<p class="foot">Última sincronización: ${esc(ago(S.settings.lastSyncAt))}${rate() ? ` — dólar ${fmtCLP(rate())}` : ''}</p>`;
 }
 
@@ -1050,13 +1072,18 @@ function amountCell(t) {
   if (t.net != null && t.net !== t.amount) return `${fmtCLP(t.amount)}<small>líquido ${fmtCLP(t.net)}</small>`;
   return fmtCLP(t.amount);
 }
+const CAT_COLORS = { 'Supermercado':'#2F7D5B', 'Comida':'#B4532A', 'Transporte':'#2F63A8', 'Hogar':'#7A5C3E', 'Salud':'#B23A6B', 'Suscripciones':'#6B4FB3',
+  'Tecnología':'#2E6A86', 'Estudio':'#4E7D2F', 'Ocio y juegos':'#A0522D', 'Deporte':'#1F7F7F', 'Compras':'#8A6D1F', 'Regalos':'#A8457A', 'Familia':'#8B5A2B',
+  'Créditos y préstamos':'#7D2F2F', 'Comisiones':'#5E5E5E', 'Descuentos y retenciones':'#5E5E5E', 'Transferencias':'#4A5A6A', 'Otros':'#66716B',
+  'Sueldo':'#1D7A4C', 'Turnos / honorarios':'#1D7A4C', 'Bonos':'#1D7A4C', 'Reembolsos':'#1D7A4C', 'Otros ingresos':'#1D7A4C' };
+const chip = (txt, c) => `<span class="chip" style="color:${c || '#4A5A6A'};background:${(c || '#4A5A6A')}1C;border-color:${(c || '#4A5A6A')}40">${esc(txt)}</span>`;
 function rowHtml(t, extra = '') {
   const unrev = !['manual', 'auto', 'fijo'].includes(t.source) && !t.reviewed;
   const where = t.card ? cardLabel(t.card) : (t.bank && BANKS[t.bank] ? BANKS[t.bank] : '');
   const bank = where ? ', ' + where : '';
   return `<tr data-tx="${esc(t.id)}" class="${unrev ? 'unrev' : ''}" tabindex="0">
     <td class="d">${dm(t.date)}</td>
-    <td class="n"><span>${esc(displayName(t))}</span><small>${esc(extra || categoryOf(t))} (${esc(originLabel(t))}${esc(bank)})</small></td>
+    <td class="n"><span>${esc(displayName(t))}</span><small class="tags">${extra ? chip(extra) : chip(categoryOf(t), CAT_COLORS[categoryOf(t)])}${t.cuotas > 1 ? chip(t.cuotas + ' cuotas', '#7D2F2F') : ''}<span>${esc(t.source === 'tarjeta' && where ? where : originLabel(t) + bank)}</span></small></td>
     <td class="num">${amountCell(t)}</td></tr>`;
 }
 function ledger(cls, title, rows, total, emptyMsg, extraFn) {
@@ -1122,7 +1149,53 @@ function subsData() {
     out.push({ name, last, items:g, anual, active, monthly: anual ? clpLast / 12 : clpLast, day: +last.date.slice(8, 10),
                next: addToDate(last.date, anual ? 12 : 1) });
   });
+  // Suscripciones agregadas a mano (si aún no llegan cobros con ese nombre)
+  const names = new Set(out.map(o => norm(o.name)));
+  const t = today();
+  manualSubs().forEach(m => {
+    if (names.has(norm(m.name))) { const g = out.find(o => norm(o.name) === norm(m.name)); g.manualId = m.id; return; }
+    const step = m.freq === 'anual' ? 12 : 1;
+    let next = m.next || t;
+    for (let i = 0; i < 240 && next < t; i++) next = addToDate(next, step);
+    const prev = addToDate(next, -step);
+    const last = { id: m.id, date: prev, amount: m.amount, currency: m.currency };
+    const v = clpNow(last);
+    out.push({ name: m.name, last, items: [], anual: step === 12, active: true, monthly: step === 12 ? v / 12 : v, day: +next.slice(8, 10), next, manual: m.id });
+  });
   return out.sort((a, b) => a.day - b.day || a.name.localeCompare(b.name));
+}
+const manualSubs = () => Object.values(S.recs).filter(r => r.kind === 'subscription' && alive(r));
+
+function openManualSub(id) {
+  const m = id ? S.recs[id] : null;
+  openSheet(m ? 'Editar suscripción' : 'Agregar suscripción', `
+    <form class="form" id="msForm">
+      <label class="f">Nombre<input type="text" name="name" required value="${esc(m ? m.name : '')}" placeholder="Ej.: Spotify"></label>
+      <div class="row2">
+        <label class="f">Monto<input type="number" name="amount" inputmode="decimal" step="any" min="0" required value="${esc(m ? m.amount : '')}"></label>
+        <label class="f">Moneda<select class="in" name="currency"><option value="CLP">CLP</option><option value="USD" ${m && m.currency === 'USD' ? 'selected' : ''}>USD</option></select></label>
+      </div>
+      <div class="row2" style="grid-template-columns:1fr 1fr">
+        <label class="f">Frecuencia<select class="in" name="freq"><option value="mensual">Mensual</option><option value="anual" ${m && m.freq === 'anual' ? 'selected' : ''}>Anual</option></select></label>
+        <label class="f">Próximo cobro<input type="date" name="next" required value="${esc(m ? m.next : today())}"></label>
+      </div>
+      <label class="f">Cómo aparece en el banco (opcional)<small>Ej.: SPOTIFY. Así los cobros reales se juntan con esta suscripción y no se duplica.</small><input type="text" name="match" value="${esc(m ? m.match || '' : '')}"></label>
+      <div class="actions">${m ? '<button type="button" class="btn danger" data-act="del-ms">Eliminar</button>' : '<span></span>'}<button class="btn" type="submit">${m ? 'Guardar' : 'Agregar'}</button></div>
+    </form>`, sh => {
+    const f = $('#msForm', sh);
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const el = f.elements, name = el.name.value.trim();
+      const rec = put({ ...(m || { id: uid('ms'), kind:'subscription' }), name, amount: +el.amount.value, currency: el.currency.value, freq: el.freq.value, next: el.next.value, match: el.match.value.trim() });
+      const key = matchKey(rec.match || name);
+      if (key.length >= 4) {
+        const ex = userRules().find(r => r.match === key && r.amount == null);
+        put({ ...(ex || { id: uid('ru'), kind:'rule', match: key }), name, category:'Suscripciones', sub: true });
+      }
+      closeSheet(); render(); toast('Suscripción guardada.');
+    });
+    sh.addEventListener('click', e => { if (e.target.closest('[data-act="del-ms"]') && confirm('¿Eliminar esta suscripción?')) { removeRec(m.id); closeSheet(); render(); } });
+  });
 }
 
 function renderSubs() {
@@ -1134,7 +1207,7 @@ function renderSubs() {
   const rows = act.map(s => {
     const t = s.last;
     const val = t.currency === 'USD' ? `${fmtUSD(t.amount)}<small>${fmtCLP(clpNow(t))}</small>` : fmtCLP(t.amount);
-    return `<tr><td><button class="nm" data-sub-rename="${esc(t.id)}" aria-label="Cambiar nombre de ${esc(s.name)}">${esc(s.name)}</button><small class="cad">${s.anual ? `Anual (${fmtCLP(s.monthly)} al mes)` : 'Mensual'}</small></td>
+    return `<tr><td><button class="nm" ${s.manual ? `data-sub-manual="${esc(s.manual)}"` : `data-sub-rename="${esc(t.id)}"`} aria-label="Editar ${esc(s.name)}">${esc(s.name)}</button><small class="cad">${s.anual ? `Anual (${fmtCLP(s.monthly)} al mes)` : 'Mensual'}${s.manual ? ', agregada a mano' : ''}</small></td>
       <td class="v">${val}</td>
       <td class="f">${dmy(t.date)}<small>próx. ${dm(s.next)}</small></td></tr>`;
   }).join('');
@@ -1147,9 +1220,10 @@ function renderSubs() {
       <tbody>${rows}</tbody>
     </table>
     <div class="subs-foot"><span class="muted">Costo anual estimado</span><b class="money">${fmtCLP(total * 12)}</b></div>
-    <p class="note-small" style="margin:0">Toca un nombre para cambiarlo; el nombre se mantiene en los próximos cobros. Los montos en dólares usan el dólar observado; el cobro final en pesos depende del tipo de cambio de tu tarjeta.</p>
+    <div class="btns" style="margin:4px 0 12px"><button class="btn ghost" data-act="add-sub">Agregar suscripción</button></div>
+    <p class="note-small" style="margin:0">Toca un nombre para cambiarlo o quitarlo si no es una suscripción; el nombre se mantiene en los próximos cobros. Los montos en dólares usan el dólar observado; el cobro final en pesos depende del tipo de cambio de tu tarjeta.</p>
     ${old.length ? `<details class="inactive"><summary>${old.length} suscripción${old.length > 1 ? 'es' : ''} sin cobros recientes</summary><ul class="rules">${old.map(s => `<li><span>${esc(s.name)}</span><span>último cobro ${dmy(s.last.date)}</span></li>`).join('')}</ul></details>` : ''}`
-    : `<p class="empty">Aún no hay suscripciones detectadas. Aparecen solas cuando un comercio cobra cada mes o cada año, o cuando marcas un gasto como suscripción al editarlo.</p>`;
+    : `<p class="empty">Aún no hay suscripciones detectadas. Aparecen solas cuando un comercio cobra cada mes o cada año, o cuando marcas un gasto como suscripción al editarlo.</p><div class="btns"><button class="btn ghost" data-act="add-sub">Agregar suscripción</button></div>`;
 }
 
 /* ---------- Análisis con IA ---------- */
@@ -1170,6 +1244,9 @@ function buildPrompt(n) {
   L.push('| Categoría | ' + months.map(monthShort).join(' | ') + ' |'); L.push('|---|' + months.map(() => '---').join('|') + '|');
   Object.entries(cats).sort((a, b) => b[1].reduce((x, y) => x + y) - a[1].reduce((x, y) => x + y)).forEach(([c, v]) => L.push(`| ${c} | ${v.map(fmtCLP).join(' | ')} |`));
 
+  const C = catCompare(S.ui.month);
+  L.push(`\n## Resumen por categoría de ${monthLong(S.ui.month)} frente a lo habitual`);
+  C.rows.forEach(r => L.push('- ' + cmpSentence(r)));
   const merch = {};
   months.forEach(m => monthTx(m).filter(t => counted(t) && dir(t) < 0 && effTipo(t) !== 'descuento').forEach(t => {
     const hasRule = ruleFor(t) && !ruleFor(t).builtin;
@@ -1224,29 +1301,289 @@ function honorariosPanel() {
   </div>`;
 }
 
+/* =====================================================================
+   Análisis: resumen del mes, recomendaciones, consulta de compra, honorarios
+   ===================================================================== */
+const firstDataDate = () => allTx().filter(x => counted(x) && x.source !== 'fijo').map(x => x.date).sort()[0] || '';
+const daysInMonth = ym => +dueOn(+ym.slice(0, 4), +ym.slice(5, 7), 31).slice(8, 10);
+/* Meses anteriores completos con datos (hasta 3) */
+function historyMonths(ym) {
+  const first = firstDataDate();
+  if (!first) return [];
+  return [1, 2, 3].map(k => addMonths(ym, -k)).filter(m => m > first.slice(0, 7) || (m === first.slice(0, 7) && +first.slice(8, 10) <= 5));
+}
+function expByCat(ym) {
+  const g = {};
+  monthTx(ym).filter(t => counted(t) && dir(t) < 0).forEach(t => { const c = categoryOf(t); g[c] = (g[c] || 0) + clp(t); });
+  return g;
+}
+/* Cada categoría del mes comparada con su promedio habitual (a la fecha, si es el mes en curso) */
+function catCompare(ym) {
+  const cur = expByCat(ym), total = Object.values(cur).reduce((a, v) => a + v, 0);
+  const hm = historyMonths(ym), hist = hm.map(expByCat);
+  const partial = ym === ymNow() ? +today().slice(8, 10) / daysInMonth(ym) : 1;
+  const cats = new Set([...Object.keys(cur), ...hist.flatMap(h => Object.keys(h))]);
+  const rows = [...cats].map(cat => {
+    const v = cur[cat] || 0;
+    const avg = hm.length ? hist.reduce((a, h) => a + (h[cat] || 0), 0) / hm.length * partial : null;
+    let label = 'sin historial para comparar', trend = 0;
+    if (avg != null) {
+      if (avg < 1) { label = v ? 'nuevo: no aparece en los meses anteriores' : 'igual que lo habitual'; trend = v ? 2 : 0; }
+      else {
+        const r = v / avg - 1;
+        if (Math.abs(r) <= 0.10) { label = 'similar a lo habitual'; trend = 0; }
+        else if (r > 0.30) { label = 'bastante mayor que lo habitual'; trend = 2; }
+        else if (r > 0) { label = 'levemente mayor que lo habitual'; trend = 1; }
+        else if (r < -0.30) { label = 'bastante menor que lo habitual'; trend = -2; }
+        else { label = 'levemente menor que lo habitual'; trend = -1; }
+      }
+    }
+    return { cat, v, pct: total ? v / total * 100 : 0, avg, label, trend };
+  }).filter(r => r.v > 0 || (r.avg || 0) > 0).sort((a, b) => b.v - a.v);
+  const hTot = hm.length ? hist.reduce((a, h) => a + Object.values(h).reduce((x, y) => x + y, 0), 0) / hm.length * partial : null;
+  return { rows, total, hTot, months: hm.length, partial: partial < 1 };
+}
+function cmpSentence(r) {
+  return `${r.cat}: se gastó ${fmtCLP(r.v)}, el ${Math.round(r.pct)}% del total, ${r.label}${r.avg != null && r.avg >= 1 ? ` (${fmtCLP(r.avg)})` : ''}.`;
+}
+
+/* Foto de las finanzas para recomendaciones y consultas de compra */
+function snapshot() {
+  const ym = ymNow(), hm = historyMonths(ym);
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  let inc, exp, basis;
+  if (hm.length) { inc = avg(hm.map(m => totals(m).inc)); exp = avg(hm.map(m => totals(m).exp)); basis = `promedio de ${hm.length} mes${hm.length > 1 ? 'es' : ''}`; }
+  else { const T = totals(ym), P = monthProjection(); inc = T.inc + P.pendInc; exp = T.exp + P.fixedExp + P.varLeft; basis = 'proyección de este mes (aún hay poca historia)'; }
+  const fixedInc = fixedRecs().filter(f => TIPOS[f.tipo].dir > 0 && (!f.end || f.end >= today())).reduce((a, f) => a + fixedCLP(f), 0);
+  if (!inc && fixedInc) inc = fixedInc;
+  const months = Array.from({length: 37}, (_, i) => addMonths(ym, i));
+  // Carga de deudas: cuotas y créditos (las compras sin cuotas son gasto normal, no deuda a plazo)
+  const entries = debtItems().filter(d => !d.single).flatMap(d => d.entries);
+  const load = {}; months.forEach(m => load[m] = sumAmt(entries.filter(e => e.date.startsWith(m))));
+  const savings = savingsRecs().reduce((a, s) => a + (+s.balance || 0), 0);
+  const subsM = subsData().filter(s => s.active).reduce((a, s) => a + s.monthly, 0);
+  return { inc: Math.round(inc), exp: Math.round(exp), surplus: Math.round(inc - exp), basis, load, savings, subsM: Math.round(subsM),
+           debt: (debtSummary() || { debt: 0 }).debt, emergency: exp ? savings / exp : null };
+}
+
+/* ---------- recomendaciones para el mes siguiente ---------- */
+function recommendations() {
+  const nym = addMonths(ymNow(), 1), S0 = snapshot(), out = [];
+  const add = (c, title, detail, impact) => out.push({ c, title, detail, impact });
+  // Plan del mes siguiente
+  const debtNext = S0.load[nym] || 0;
+  const fixedNext = fixedRecs().filter(f => !f.debt && TIPOS[f.tipo].dir < 0).reduce((a, f) => a + fixedDates(f, dueOn(+nym.slice(0, 4), +nym.slice(5, 7), 31)).filter(d => d.startsWith(nym)).length * fixedCLP(f), 0);
+  const incNext = fixedRecs().filter(f => TIPOS[f.tipo].dir > 0).reduce((a, f) => a + fixedDates(f, dueOn(+nym.slice(0, 4), +nym.slice(5, 7), 31)).filter(d => d.startsWith(nym)).length * fixedCLP(f), 0) || S0.inc;
+  const varAvg = Math.max(S0.exp - S0.subsM - fixedNext, 0);
+  const plan = { nym, inc: incNext, debt: debtNext, fixed: fixedNext, subs: S0.subsM, variable: varAvg, margin: incNext - debtNext - fixedNext - S0.subsM - varAvg };
+  // Carga de deudas
+  if (incNext) {
+    const ratio = debtNext / incNext;
+    if (ratio > 0.4) add('#B3261E', `Cuotas y créditos: ${Math.round(ratio * 100)}% de tus ingresos de ${monthOnly(nym)}`, 'Es una carga alta (sobre 40%). Evita nuevas compras en cuotas hasta que termine alguna y prioriza prepagar las que cobran interés.', debtNext);
+    else if (ratio > 0.3) add('#C98A10', `Cuotas y créditos: ${Math.round(ratio * 100)}% de tus ingresos de ${monthOnly(nym)}`, 'Estás cerca del límite habitual de 30%. Antes de sumar cuotas nuevas, revisa cuánto se libera en los próximos meses.', debtNext);
+  }
+  // Cuotas que terminan
+  const ending = debtItems().filter(d => !d.single && !d.open && d.end && d.end.startsWith(ymNow()));
+  if (ending.length) add('#1D7A4C', `${ending.length} deuda${ending.length > 1 ? 's terminan' : ' termina'} este mes`, `Desde ${monthOnly(nym)} se liberan cerca de ${fmtCLP(ending.reduce((a, d) => a + d.vc, 0))} al mes. Puedes destinarlo a ahorro en vez de a nuevas cuotas.`, 0);
+  // Categorías sobre lo habitual
+  const cmp = catCompare(ymNow());
+  cmp.rows.filter(r => r.trend >= 1 && r.avg >= 1 && !['Créditos y préstamos', 'Descuentos y retenciones', 'Transferencias'].includes(r.cat)).slice(0, 3).forEach(r => {
+    const full = r.avg / (cmp.partial ? +today().slice(8, 10) / daysInMonth(ymNow()) : 1);
+    add(CAT_COLORS[r.cat], `${r.cat}: ${r.label}`, `Llevas ${fmtCLP(r.v)} frente a ${fmtCLP(r.avg)} habitual a esta altura del mes. Para ${monthOnly(nym)}, un tope de ${fmtCLP(Math.round(full / 1000) * 1000)} te devuelve a tu nivel normal.`, Math.max(r.v - r.avg, 0));
+  });
+  // Presupuesto
+  if (!Object.keys(budgets()).length && cmp.rows.length) add('#2F63A8', 'Define un presupuesto', `Empieza con tus 3 categorías principales: ${cmp.rows.slice(0, 3).map(r => r.cat).join(', ')}. La app te avisará al 80% y al 100%.`, 0);
+  // Suscripciones que se superponen
+  const act = subsData().filter(s => s.active);
+  const groups = [
+    ['asistentes de IA', /CHATGPT|CLAUDE|GEMINI|GOOGLE ONE|AI PRO|COPILOT|PERPLEXITY/],
+    ['streaming de video', /NETFLIX|PRIME VIDEO|DISNEY|MAX|HBO|YOUTUBE|CRUNCHYROLL|APPLE TV/],
+    ['almacenamiento en la nube', /DROPBOX|ICLOUD|GOOGLE ONE|ONEDRIVE|MICROSOFT 365/],
+    ['audiolibros', /AUDIBLE|STORYTEL|KINDLE/]
+  ];
+  groups.forEach(([label, re]) => {
+    const g = act.filter(s => re.test(norm(s.name)));
+    if (g.length >= 2) add('#6B4FB3', `${g.length} suscripciones de ${label}`, `${g.map(s => s.name).join(', ')}: suman ${fmtCLP(g.reduce((a, s) => a + s.monthly, 0))} al mes. Revisa si usas todas.`, Math.min(...g.map(s => s.monthly)));
+  });
+  // Alzas de precio en suscripciones
+  act.filter(s => s.items.length >= 2).forEach(s => {
+    const [a, b] = s.items.slice(-2);
+    if (a.currency === b.currency && b.amount > a.amount * 1.05) add('#6B4FB3', `${s.name} subió de precio`, `Pasó de ${a.currency === 'USD' ? fmtUSD(a.amount) : fmtCLP(a.amount)} a ${b.currency === 'USD' ? fmtUSD(b.amount) : fmtCLP(b.amount)}.`, clpNow(b) - clpNow(a));
+  });
+  // Costo de la tarjeta
+  const C = cardCosts();
+  if (C.prepay.length) { const x = C.prepay[0]; add('#7D2F2F', `Prepaga primero: ${x.name}`, `Cobra ${String(x.rate).replace('.', ',')}% mensual. Prepagarla (${fmtCLP(x.left)}) evita cerca de ${fmtCLP(x.interestLeft)} en intereses.`, x.interestLeft); }
+  const seg = C.fees.find(f => /SEGURO/i.test(norm(f.name)));
+  if (seg) add('#5E5E5E', 'Revisa el seguro de la tarjeta', `Pagas ${fmtCLP(seg.amt)} en el último período (${fmtCLP(seg.amt * 12)} al año). Si no lo necesitas, puedes pedir darlo de baja.`, seg.amt);
+  if (C.feesMonth > 0) add('#5E5E5E', 'Comisiones e impuestos de la tarjeta', `Suman ${fmtCLP(C.feesMonth)} en el último período. La comisión de administración a veces se puede negociar o eximir por uso.`, 0);
+  // Ahorro y fondo de emergencia
+  if (plan.margin > 0) add('#1D7A4C', `Ahorra al inicio de ${monthOnly(nym)}`, `Tu margen estimado es ${fmtCLP(plan.margin)}. Apartar la mitad (${fmtCLP(Math.round(plan.margin / 2 / 1000) * 1000)}) apenas recibas tus ingresos hace más probable que el ahorro ocurra.`, Math.round(plan.margin / 2));
+  else if (incNext) add('#B3261E', `Margen negativo para ${monthOnly(nym)}`, `Tus compromisos y gasto habitual superan tus ingresos estimados en ${fmtCLP(-plan.margin)}. Prioriza recortar gasto variable y no sumar cuotas nuevas.`, -plan.margin);
+  if (S0.exp && S0.emergency != null && S0.emergency < 3) add('#2F63A8', 'Fondo de emergencia', `Tus ahorros registrados cubren ${S0.emergency.toFixed(1).replace('.', ',')} meses de gastos. Una meta habitual es de 3 a 6 meses (${fmtCLP(S0.exp * 3)} a ${fmtCLP(S0.exp * 6)}).`, 0);
+  const pend = pendingList().length;
+  if (pend > 15) add('#66716B', `${pend} movimientos por revisar`, 'Revisarlos mejora las categorías y hace más precisas estas recomendaciones.', 0);
+  return { plan, list: out, basis: S0.basis };
+}
+
+/* ---------- consulta de compra ---------- */
+function evaluatePurchase(q) {
+  const S0 = snapshot();
+  const P = q.price, n = q.mode === 'cuotas' ? Math.max(q.n || 1, 1) : 1, r = q.mode === 'cuotas' && q.interest ? (q.rate || 0) : 0;
+  const cuota = Math.round(cuotaDe(P, n, r)), total = cuota * n, interest = Math.max(total - P, 0);
+  const first = q.mode === 'cuotas' ? nextDueFor(q.card, today()) : today();
+  const months = Array.from({length: n}, (_, j) => addToDate(first, j).slice(0, 7));
+  const loadNow = months.map(m => S0.load[m] || 0);
+  const peak = Math.max(...loadNow.map(v => v + (q.mode === 'cuotas' ? cuota : 0)), 0);
+  const ratio = S0.inc ? peak / S0.inc : null;
+  const reasons = [], tips = [];
+  let level = 'na';
+  if (!S0.inc) {
+    reasons.push('Aún no hay ingresos registrados, así que no puedo medir cuánto pesa esta compra en tu presupuesto.');
+  } else if (q.mode === 'cuotas') {
+    reasons.push(`La cuota sería ${fmtCLP(cuota)} durante ${n} mes${n > 1 ? 'es' : ''}${interest ? `, con ${fmtCLP(interest)} de intereses en total` : ', sin intereses'}.`);
+    reasons.push(`Con esta compra, tus cuotas y créditos llegarían a ${fmtCLP(peak)} en el mes más cargado: ${Math.round(ratio * 100)}% de tus ingresos (${S0.basis}).`);
+    reasons.push(`Tu margen mensual habitual es ${fmtCLP(S0.surplus)}; la cuota ocuparía ${S0.surplus > 0 ? Math.round(cuota / S0.surplus * 100) + '%' : 'más de lo que te sobra'} de ese margen.`);
+    if (ratio <= 0.30 && cuota <= 0.5 * Math.max(S0.surplus, 0)) level = 'ok';
+    else if (ratio <= 0.40 && cuota <= Math.max(S0.surplus, 0)) level = 'mid';
+    else level = 'no';
+  } else {
+    const after = S0.savings - P;
+    reasons.push(`Pagar ${fmtCLP(P)} al contado equivale a ${S0.surplus > 0 ? (P / S0.surplus).toFixed(1).replace('.', ',') + ' meses de tu margen habitual' : 'más de lo que hoy te sobra cada mes'}.`);
+    if (S0.savings) reasons.push(`Tus ahorros registrados quedarían en ${fmtCLP(after)}${S0.exp ? `, ${(Math.max(after, 0) / S0.exp).toFixed(1).replace('.', ',')} meses de gastos` : ''}.`);
+    if (S0.surplus > 0 && P <= S0.surplus && (!S0.savings || after >= 3 * S0.exp)) level = 'ok';
+    else if (S0.surplus > 0 && (P <= 2 * S0.surplus || after >= S0.exp)) level = 'mid';
+    else level = 'no';
+  }
+  // Cómo hacerlo mejor
+  if (S0.inc && S0.surplus > 0) {
+    const opts = [3, 6, 10, 12, 18, 24, 36].filter(k => {
+      const c = P / k;
+      const pk = Math.max(...Array.from({length: k}, (_, j) => (S0.load[addToDate(nextDueFor(q.card, today()), j).slice(0, 7)] || 0) + c));
+      return c <= 0.5 * S0.surplus && pk <= 0.30 * S0.inc;
+    });
+    if (opts.length) tips.push(`Si hay cuotas sin interés, desde ${opts[0]} cuotas (${fmtCLP(Math.round(P / opts[0]))} al mes) la compra queda dentro de rangos cómodos: cuota bajo la mitad de tu margen y cuotas totales bajo 30% de tus ingresos.`);
+    if (r > 0) tips.push(`Con ${String(r).replace('.', ',')}% mensual pagarías ${fmtCLP(interest)} extra. Busca la opción sin interés o ahorra antes: apartando ${fmtCLP(Math.round(S0.surplus / 2))} al mes la juntas en ${Math.ceil(P / (S0.surplus / 2))} meses.`);
+    if (q.mode === 'contado' && level !== 'ok') tips.push(`Ahorrando ${fmtCLP(Math.round(S0.surplus / 2))} al mes (la mitad de tu margen) juntarías el monto en ${Math.ceil(P / (S0.surplus / 2))} meses sin tocar tu colchón.`);
+  }
+  // ¿Cuándo se libera espacio?
+  const startM = first.slice(0, 7), nowLoad = S0.load[startM] || 0;
+  const freeM = Array.from({length: 18}, (_, i) => addMonths(startM, i + 1)).find(m => nowLoad - (S0.load[m] || 0) >= cuota);
+  if (freeM && q.mode === 'cuotas' && level !== 'ok') tips.push(`En ${monthLong(freeM)} tus cuotas bajan en al menos ${fmtCLP(cuota)} frente a ${monthLong(startM)}. Si compras después de que terminen, la nueva cuota no aumentaría tu carga.`);
+  if (q.mode === 'cuotas' && !r) tips.push('Si las cuotas son sin interés, pagar en cuotas en vez de al contado te deja más liquidez sin costo extra, siempre que no cobren comisión.');
+  const title = { ok:'Se ve manejable', mid:'Posible, con cuidado', no:'No se ve recomendable ahora', na:'Faltan datos' }[level];
+  return { level, title, reasons, tips, cuota, total, interest, first, S0 };
+}
+
+function purchasePrompt(q, R) {
+  const S0 = R.S0;
+  return `Actúa como asesor financiero personal prudente. Quiero comprar: ${q.what || 'un producto'} por ${fmtCLP(q.price)}, ${q.mode === 'cuotas' ? `en ${q.n} cuotas ${q.interest ? `con interés de ${q.rate}% mensual` : 'sin interés'} (cuota ${fmtCLP(R.cuota)}, total ${fmtCLP(R.total)})` : 'al contado'}.
+
+Mis números (pesos chilenos):
+- Ingresos mensuales: ${fmtCLP(S0.inc)} (${S0.basis})
+- Gastos mensuales: ${fmtCLP(S0.exp)}
+- Margen mensual: ${fmtCLP(S0.surplus)}
+- Pagos de cuotas y créditos este mes: ${fmtCLP(S0.load[ymNow()] || 0)}; próximos meses: ${Array.from({length: 6}, (_, i) => addMonths(ymNow(), i + 1)).map(m => `${monthShort(m)} ${fmtCLP(S0.load[m] || 0)}`).join(', ')}
+- Deuda total por pagar: ${fmtCLP(S0.debt)}
+- Suscripciones: ${fmtCLP(S0.subsM)} al mes
+- Ahorros registrados: ${fmtCLP(S0.savings)}
+${S.settings.context.trim() ? '- Contexto: ' + S.settings.context.trim() + '\n' : ''}
+Mi app estimó: «${R.title}».
+
+Dime: 1) si es recomendable hacerla ahora y por qué; 2) si la hago, cuál es la mejor forma (contado, cuotas sin interés, número de cuotas, esperar a que terminen otras deudas o ahorrar antes); 3) qué riesgo corro. Distingue datos de supuestos.`;
+}
+
 function renderIA() {
-  const notes = Object.values(S.recs).filter(r => r.kind === 'note' && alive(r)).sort((a, b) => b.month.localeCompare(a.month));
-  $('#tab-ia').innerHTML = honorariosPanel() + `
+  const sub = S.ui.iaTab || 'mes';
+  const seg = [['mes', 'Resumen del mes'], ['rec', 'Recomendaciones'], ['compra', 'Consulta de compra'], ['hon', 'Honorarios']]
+    .map(([k, v]) => `<button data-iat="${k}" aria-pressed="${sub === k}">${v}</button>`).join('');
+  let body = '';
+  if (sub === 'mes') {
+    const ym = S.ui.month, C = catCompare(ym);
+    const notes = Object.values(S.recs).filter(r => r.kind === 'note' && alive(r)).sort((a, b) => b.month.localeCompare(a.month));
+    const totLabel = C.hTot != null && C.hTot >= 1 ? (Math.abs(C.total / C.hTot - 1) <= 0.1 ? 'similar a lo habitual' : C.total > C.hTot ? `${Math.round((C.total / C.hTot - 1) * 100)}% más que lo habitual` : `${Math.round((1 - C.total / C.hTot) * 100)}% menos que lo habitual`) : 'sin historial para comparar';
+    body = `<div class="panel">
+      <h2>Gastos de ${esc(monthLong(ym))} por categoría</h2>
+      <p class="muted" style="font-size:14px;margin:0 0 8px">Total ${fmtCLP(C.total)}, ${totLabel}${C.partial ? ' a esta altura del mes' : ''}. ${C.months ? `Lo habitual es el promedio de ${C.months} mes${C.months > 1 ? 'es' : ''} anterior${C.months > 1 ? 'es' : ''}${C.partial ? ', proporcional a los días que van' : ''}.` : 'Aún no hay meses anteriores completos para comparar.'}</p>
+      ${C.rows.length ? `<ul class="cmp">${C.rows.map(r => `<li><span>${chip(r.cat, CAT_COLORS[r.cat])} <b class="money">${fmtCLP(r.v)}</b> <span class="muted">(${Math.round(r.pct)}%)</span></span><b class="${r.trend > 0 ? 'up' : r.trend < 0 ? 'down' : 'muted'}">${r.trend > 0 ? '▲' : r.trend < 0 ? '▼' : '='}</b><small>${esc(r.label)}${r.avg != null && r.avg >= 1 ? `: habitual ${fmtCLP(r.avg)}` : ''}</small></li>`).join('')}</ul>` : '<p class="empty">Sin gastos este mes.</p>'}
+    </div>
     <div class="panel">
-      <p>Arma un resumen de tus finanzas para pegarlo en Claude. Incluye totales por mes y categoría, comercios, suscripciones y ahorros. No incluye números de cuenta, RUT ni nombres de personas.</p>
+      <h2>Analizar con Claude</h2>
+      <p style="font-size:14px">Arma un resumen para pegar en Claude. Incluye este resumen por categoría, totales, comercios, suscripciones y ahorros. No incluye números de cuenta, RUT ni nombres de personas.</p>
       <div class="filters" style="margin:0">
-        <select class="small" id="iaPeriod" aria-label="Período"><option value="3">Últimos 3 meses</option><option value="1">Solo ${esc(monthOnly(S.ui.month))}</option><option value="6">Últimos 6 meses</option></select>
+        <select class="small" id="iaPeriod" aria-label="Período"><option value="3">Últimos 3 meses</option><option value="1">Solo ${esc(monthOnly(ym))}</option><option value="6">Últimos 6 meses</option></select>
         <button class="btn" data-act="build-prompt">Preparar resumen</button>
       </div>
-      <div id="promptBox" class="hide">
-        <label class="vh" for="promptTxt">Resumen para Claude</label>
-        <textarea id="promptTxt" style="margin-top:12px"></textarea>
-        <div class="btns"><button class="btn" data-act="copy-prompt">Copiar</button><button class="btn ghost" data-act="open-claude">Abrir Claude</button></div>
-      </div>
+      <div id="promptBox" class="hide"><label class="vh" for="promptTxt">Resumen para Claude</label><textarea id="promptTxt" style="margin-top:12px"></textarea>
+        <div class="btns"><button class="btn" data-act="copy-prompt" data-target="#promptTxt">Copiar</button><button class="btn ghost" data-act="open-claude">Abrir Claude</button></div></div>
     </div>
     <div class="panel">
       <h2>Guardar la respuesta</h2>
-      <p class="muted" style="font-size:14px">Pega aquí el análisis para tenerlo junto a los datos de ${esc(monthLong(S.ui.month))}.</p>
+      <p class="muted" style="font-size:14px">Pega aquí el análisis para tenerlo junto a los datos de ${esc(monthLong(ym))}.</p>
       <label class="vh" for="answerTxt">Respuesta</label>
-      <textarea id="answerTxt" style="min-height:120px">${esc((S.recs['note_' + S.ui.month] || {}).text || '')}</textarea>
+      <textarea id="answerTxt" style="min-height:120px">${esc((S.recs['note_' + ym] || {}).text || '')}</textarea>
       <div class="btns"><button class="btn" data-act="save-answer">Guardar respuesta</button></div>
     </div>
     ${notes.length ? `<div class="panel"><h2>Análisis anteriores</h2><ul class="answers">${notes.map(nt => `<li><details><summary>${esc(monthLong(nt.month))}</summary><pre>${esc(nt.text)}</pre></details></li>`).join('')}</ul></div>` : ''}`;
+  } else if (sub === 'rec') {
+    const R = recommendations(), p = R.plan;
+    body = `<div class="panel">
+      <h2>Plan para ${esc(monthLong(p.nym))}</h2>
+      <div class="sumline"><span>Ingresos esperados</span><b class="money inc">${fmtCLP(p.inc)}</b></div>
+      <div class="sumline"><span>Cuotas y créditos</span><b class="money">−${fmtCLP(p.debt)}</b></div>
+      <div class="sumline"><span>Pagos fijos</span><b class="money">−${fmtCLP(p.fixed)}</b></div>
+      <div class="sumline"><span>Suscripciones</span><b class="money">−${fmtCLP(p.subs)}</b></div>
+      <div class="sumline"><span>Gasto variable habitual</span><b class="money">−${fmtCLP(p.variable)}</b></div>
+      <div class="sumline" style="border-top:1px solid var(--line)"><span><b>Margen estimado</b></span><b class="money ${p.margin >= 0 ? 'inc' : 'exp'}">${signed(p.margin)}</b></div>
+      <p class="note-small" style="margin:6px 0 0">Basado en ${esc(R.basis)}. Es una estimación: mejora a medida que la app tenga más meses de datos.</p>
+    </div>
+    ${R.list.length ? `<ul class="recs">${R.list.map(x => `<li style="--c:${x.c}"><b>${esc(x.title)}</b>${esc(x.detail)}${x.impact > 0 ? `<br><small>Impacto aproximado: ${fmtCLP(x.impact)}</small>` : ''}</li>`).join('')}</ul>` : '<p class="empty">Sin recomendaciones por ahora: tus números se ven en orden.</p>'}
+    <div class="panel" style="margin-top:16px"><h2>Pedir recomendaciones a Claude</h2>
+      <div class="btns" style="margin:0"><button class="btn" data-act="rec-prompt">Preparar resumen</button></div>
+      <div id="recBox" class="hide"><textarea id="recTxt" style="margin-top:12px" aria-label="Resumen para Claude"></textarea>
+      <div class="btns"><button class="btn" data-act="copy-prompt" data-target="#recTxt">Copiar</button><button class="btn ghost" data-act="open-claude">Abrir Claude</button></div></div></div>`;
+  } else if (sub === 'compra') {
+    const q = S.ui.lastQuery || { what:'', price:'', mode:'cuotas', n:12, interest:false, rate:'', card: Object.keys(S.settings.cards || {})[0] || '' };
+    body = `<div class="panel">
+      <h2>Consulta de compra</h2>
+      <p class="muted" style="font-size:14px;margin:0 0 10px">Escribe qué quieres comprar y cómo lo pagarías. La app lo compara con tus ingresos, gastos, cuotas y ahorros.</p>
+      <form class="form" id="buyForm">
+        <label class="f">¿Qué quieres comprar?<input type="text" name="what" value="${esc(q.what)}" placeholder="Ej.: consola"></label>
+        <label class="f">Precio (CLP)<input type="number" name="price" inputmode="numeric" min="0" required value="${esc(q.price)}"></label>
+        <fieldset style="border:0;padding:0;margin:0"><legend class="vh">Forma de pago</legend><div class="types">
+          <label><input type="radio" name="mode" value="contado" ${q.mode === 'contado' ? 'checked' : ''}>Al contado</label>
+          <label><input type="radio" name="mode" value="cuotas" ${q.mode === 'cuotas' ? 'checked' : ''}>En cuotas</label></div></fieldset>
+        <div id="buyCq" class="form ${q.mode === 'cuotas' ? '' : 'hide'}">
+          <div class="row2" style="grid-template-columns:1fr 1fr">
+            <label class="f">Cuotas<input type="number" name="n" min="2" max="60" value="${esc(q.n)}"></label>
+            <label class="f">Interés<select class="in" name="interest"><option value="no">Sin interés</option><option value="si" ${q.interest ? 'selected' : ''}>Con interés</option></select></label>
+          </div>
+          <label class="f ${q.interest ? '' : 'hide'}" id="buyRate">Tasa mensual (%)<input type="number" name="rate" step="0.01" min="0" value="${esc(q.rate)}" placeholder="Ej.: 2,5"></label>
+          ${Object.keys(S.settings.cards || {}).length ? `<label class="f">Tarjeta<select class="in" name="card">${Object.entries(S.settings.cards).map(([k, v]) => `<option value="${esc(k)}" ${q.card === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>` : ''}
+        </div>
+        <div class="actions" style="margin-top:4px"><span></span><button class="btn" type="submit">Evaluar</button></div>
+      </form>
+      <div id="buyOut"></div>
+    </div>`;
+  } else body = honorariosPanel();
+  $('#tab-ia').innerHTML = `<div class="seg wrap" role="group" aria-label="Secciones de análisis" style="margin-bottom:14px">${seg}</div>` + body;
+  if (sub === 'compra' && S.ui.lastQuery && S.ui.lastQuery.price) showPurchase(S.ui.lastQuery);
+}
+
+function readPurchaseForm() {
+  const el = $('#buyForm').elements;
+  return { what: el.what.value.trim(), price: +el.price.value || 0, mode: el.mode.value, n: Math.round(+el.n.value) || 1,
+           interest: el.interest.value === 'si', rate: +el.rate.value || 0, card: el.card ? el.card.value : '' };
+}
+function showPurchase(q) {
+  const R = evaluatePurchase(q);
+  $('#buyOut').innerHTML = `
+    <div class="verdict ${R.level}"><h3>${esc(R.title)}</h3>${q.what ? esc(q.what) + ': ' : ''}${fmtCLP(q.price)}${q.mode === 'cuotas' ? `, ${q.n} cuotas de ${fmtCLP(R.cuota)}` : ' al contado'}</div>
+    <ul class="cost-list">${R.reasons.map(x => `<li><span>${esc(x)}</span></li>`).join('')}</ul>
+    ${R.tips.length ? `<h2 style="margin-top:14px">Cómo hacerlo mejor</h2><ul class="cost-list">${R.tips.map(x => `<li><span>${esc(x)}</span></li>`).join('')}</ul>` : ''}
+    <p class="note-small">Es un cálculo con tus propios datos, no una asesoría financiera. Umbrales usados: cuotas y créditos bajo 30% de tus ingresos y cuota bajo la mitad de tu margen mensual.</p>
+    <div class="btns"><button class="btn ghost" data-act="buy-prompt">Preparar consulta para Claude</button></div>
+    <div id="buyBox" class="hide"><textarea id="buyTxt" style="margin-top:12px" aria-label="Consulta para Claude">${esc(purchasePrompt(q, R))}</textarea>
+    <div class="btns"><button class="btn" data-act="copy-prompt" data-target="#buyTxt">Copiar</button><button class="btn ghost" data-act="open-claude">Abrir Claude</button></div></div>`;
 }
 
 /* ---------- Ajustes ---------- */
@@ -1317,7 +1654,15 @@ function renderAjustes() {
         <button class="btn ghost" data-act="rescan">Volver a leer correos</button>
       </div>
       <div class="btns"><button class="btn danger" data-act="wipe">Borrar los datos de este dispositivo</button></div>
-      <p class="muted" style="font-size:13px;margin:12px 0 0">Versión ${esc(APP_VERSION)}</p>
+    </div>
+
+    <div class="panel">
+      <h2>Actualizaciones</h2>
+      <div class="sumline"><span>Versión instalada</span><b>${esc(APP_VERSION_LABEL)}</b></div>
+      <div class="sumline"><span>Última revisión</span><b>${S.settings.lastUpdateCheck ? esc(ago(S.settings.lastUpdateCheck)) : 'nunca'}</b></div>
+      <div class="btns"><button class="btn" data-act="check-update">Buscar actualización</button></div>
+      <p class="status" id="updStatus"></p>
+      <p class="muted" style="font-size:13px;margin:4px 0 0">Si hay una versión más nueva en tu página, se instala y la app se recarga. Tus datos no se pierden.</p>
     </div>`;
 }
 
@@ -1381,6 +1726,25 @@ function openTxEditor(id) {
         <label class="f">Categoría<select class="in" name="category" id="catSel"></select></label>
         <label class="f">Fecha<input type="date" name="date" required value="${esc(t ? t.date : today())}"></label>
       </div>
+      <div id="cqWrap" class="form hide">
+        <fieldset style="border:0;padding:0;margin:0"><legend style="font-size:14px;font-weight:600;margin-bottom:6px">¿En cuotas?</legend><div class="types">
+          <label><input type="radio" name="encuotas" value="no" ${!(t && t.cuotas > 1) ? 'checked' : ''}>No</label>
+          <label><input type="radio" name="encuotas" value="si" ${t && t.cuotas > 1 ? 'checked' : ''}>Sí</label>
+        </div></fieldset>
+        <div id="cqBox2" class="form hide">
+          <div class="row2" style="grid-template-columns:1fr 1fr">
+            <label class="f">Número de cuotas<input type="number" name="ncuotas" min="2" max="60" value="${esc(t && t.cuotas > 1 ? t.cuotas : 3)}"></label>
+            <label class="f">Interés<select class="in" name="coninteres"><option value="no">Sin interés</option><option value="si" ${t && t.rate > 0 ? 'selected' : ''}>Con interés</option></select></label>
+          </div>
+          <label class="f hide" id="rateRow">Tasa de interés mensual (%)<input type="number" name="tasa" step="0.01" min="0" inputmode="decimal" value="${esc(t && t.rate ? t.rate : '')}" placeholder="Ej.: 2,5"></label>
+          <div class="row2" style="grid-template-columns:1fr 1fr">
+            <label class="f">Valor de la cuota<small>Se calcula solo</small><input type="number" name="vcuota" step="any" min="0" value="${esc(t && t.vc ? t.vc : '')}"></label>
+            <label class="f">Primera cuota<small>Fecha de pago estimada</small><input type="date" name="firstDue" value="${esc(t && t.firstDue ? t.firstDue : '')}"></label>
+          </div>
+          <label class="f">Tarjeta<select class="in" name="card"><option value="">Sin tarjeta o no está en la lista</option>${Object.entries(S.settings.cards || {}).map(([k, v]) => `<option value="${esc(k)}" ${(t && t.card === k) || (!t && Object.keys(S.settings.cards || {})[0] === k) ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
+          <p class="notice" id="cqPrev"></p>
+        </div>
+      </div>
       <div id="salaryBox" class="form hide">
         <label class="f">Sueldo bruto (opcional)<small>Si lo completas, la diferencia con el líquido se registra como descuento del sueldo en egresos.</small><input type="number" name="bruto" inputmode="numeric" min="0" value="${esc(mode === 'sueldo' ? t.amount : '')}"></label>
       </div>
@@ -1409,6 +1773,21 @@ function openTxEditor(id) {
       $('#salaryBox', sh).classList.toggle('hide', !(isInc && f.elements.category.value === 'Sueldo'));
       $('#honBox', sh).classList.toggle('hide', !(isInc && f.elements.category.value === 'Turnos / honorarios'));
       $('#subRow', sh).classList.toggle('hide', d >= 0);
+      // ¿En cuotas? solo para gastos
+      const el = f.elements;
+      $('#cqWrap', sh).classList.toggle('hide', k !== 'gasto');
+      const enCq = k === 'gasto' && el.encuotas.value === 'si';
+      $('#cqBox2', sh).classList.toggle('hide', !enCq);
+      $('#rateRow', sh).classList.toggle('hide', el.coninteres.value !== 'si');
+      if (enCq) {
+        const P = +el.monto.value || 0, n = Math.min(Math.max(Math.round(+el.ncuotas.value) || 2, 2), 60);
+        const r = el.coninteres.value === 'si' ? (+el.tasa.value || 0) : 0;
+        if (!vcTouched) el.vcuota.value = P ? (el.currency.value === 'USD' ? cuotaDe(P, n, r).toFixed(2) : Math.round(cuotaDe(P, n, r))) : '';
+        if (!dueTouched) el.firstDue.value = nextDueFor(el.card.value, el.date.value || today());
+        const vc = +el.vcuota.value || 0, total = vc * n;
+        const fmtx = el.currency.value === 'USD' ? fmtUSD : fmtCLP;
+        $('#cqPrev', sh).textContent = vc ? `${n} cuotas de ${fmtx(vc)} desde ${dmy(el.firstDue.value)}. Total ${fmtx(total)}${total - P > 1 ? `, ${fmtx(total - P)} en intereses` : ', sin intereses'}. Se agrega a Deudas; si después aparece en un estado de cuenta, no se cuenta dos veces.` : 'Ingresa el monto para calcular la cuota.';
+      }
       const bol = isInc && f.elements.category.value === 'Turnos / honorarios' && f.elements.boleta.checked;
       const sal = isInc && f.elements.category.value === 'Sueldo';
       $('#montoLbl', sh).textContent = bol ? 'Monto bruto de la boleta' : sal ? 'Monto líquido (lo que llega al banco)' : 'Monto';
@@ -1417,10 +1796,14 @@ function openTxEditor(id) {
         $('#honCalc', sh).textContent = b ? `Retención ${String(pct).replace('.', ',')}%: ${fmtCLP(b * pct / 100)}. Líquido: ${fmtCLP(b - Math.round(b * pct / 100))}.` : `Retención ${String(pct).replace('.', ',')}% según el año de la fecha.`;
       }
     };
+    let vcTouched = !!(t && t.vc && t.cuotas > 1 && Math.abs(t.vc - cuotaDe(t.amount, t.cuotas, t.rate || 0)) > 1);
+    let dueTouched = !!(t && t.firstDue);
+    f.elements.vcuota.addEventListener('input', () => { vcTouched = f.elements.vcuota.value !== ''; });
+    f.elements.firstDue.addEventListener('input', () => { dueTouched = f.elements.firstDue.value !== ''; });
     f.elements.category.innerHTML = catOptions(TIPOS[tp].dir || -1, sel);
     upd();
     f.addEventListener('change', upd);
-    f.elements.monto.addEventListener('input', upd);
+    f.addEventListener('input', e => { if (['monto', 'ncuotas', 'tasa'].includes(e.target.name)) upd(); });
     f.addEventListener('submit', e => { e.preventDefault(); saveTx(t, f); });
     sh.addEventListener('click', e => {
       const a = e.target.closest('[data-act]');
@@ -1452,6 +1835,13 @@ function saveTx(t, f) {
   t.reviewed = true;
   t.category = cat;
   if (d < 0) t.sub = f.elements.sub.value === 'si' ? true : f.elements.sub.value === 'no' ? false : undefined;
+  if (k === 'gasto' && f.elements.encuotas.value === 'si') {
+    t.cuotas = Math.min(Math.max(Math.round(+f.elements.ncuotas.value) || 2, 2), 60);
+    t.rate = f.elements.coninteres.value === 'si' ? (+f.elements.tasa.value || 0) : undefined;
+    t.vc = +f.elements.vcuota.value || undefined;
+    t.firstDue = f.elements.firstDue.value || undefined;
+    t.card = f.elements.card.value || t.card;
+  } else { t.cuotas = undefined; t.rate = undefined; t.vc = undefined; t.firstDue = undefined; }
   if (t.currency === 'USD' && !t.fx) t.fx = rate() || undefined;
   if (typedName && typedName !== autoName) t.name = typedName;
 
@@ -1512,17 +1902,25 @@ function openSubRename(txId) {
       <label class="f">Nombre<input type="text" name="name" required value="${esc(current)}"></label>
       <label class="chk"><input type="checkbox" name="onlyAmount">Solo para cobros de ${t.currency === 'USD' ? fmtUSD(t.amount) : fmtCLP(t.amount)}</label>
       <p class="calc">Útil cuando un mismo comercio cobra productos distintos, como Microsoft con Office y Game Pass.</p>
-      <label class="chk"><input type="checkbox" name="notSub">No es una suscripción</label>
-      <div class="actions"><span></span><button class="btn" type="submit">Guardar</button></div>
+      <div class="actions"><button type="button" class="btn danger" data-act="unsub">Quitar de suscripciones</button><button class="btn" type="submit">Guardar</button></div>
     </form>`, sh => {
     const f = $('#rnForm', sh);
+    sh.addEventListener('click', e => {
+      if (!e.target.closest('[data-act="unsub"]')) return;
+      const match = matchKey(t.rawName || t.counterparty || current);
+      const existing = userRules().find(r => r.match === match && r.amount == null);
+      put({ ...(existing || { id: uid('ru'), kind:'rule', match }), name: existing ? existing.name : current, sub: false,
+            category: existing && existing.category !== 'Suscripciones' ? existing.category : undefined });
+      allTx().filter(x => matchKey(x.rawName) === match && x.sub === true).forEach(x => { x.sub = undefined; put(x); });
+      closeSheet(); render(); toast('Quitada. Sus cobros siguen en Movimientos como gastos normales.');
+    });
     f.addEventListener('submit', e => {
       e.preventDefault();
       const match = matchKey(t.rawName || t.counterparty || f.elements.name.value);
       const amount = f.elements.onlyAmount.checked ? t.amount : null;
       const existing = userRules().find(r => r.match === match && (r.amount ?? null) === amount);
       put({ ...(existing || { id: uid('ru'), kind:'rule', match }), name: f.elements.name.value.trim(), category:'Suscripciones',
-            sub: f.elements.notSub.checked ? false : true, amount, currency: amount != null ? t.currency : undefined });
+            sub: true, amount, currency: amount != null ? t.currency : undefined });
       allTx().filter(x => x.name === current && matchKey(x.rawName) === match).forEach(x => { x.name = ''; put(x); });
       closeSheet(); render(); toast('Nombre guardado para los próximos cobros.');
     });
@@ -1716,6 +2114,38 @@ const sumAmt = a => a.reduce((s, e) => s + e.amt, 0);
 const stThisPayment = st => sumAmt(activeItems(st).flatMap(i => itemEntries(i, st)).filter(e => e.date === stDue(st)));
 const stDebt = st => sumAmt(activeItems(st).flatMap(i => itemEntries(i, st)));
 
+/* Cuota con interés mensual r% (sistema francés); sin interés = monto / n */
+function cuotaDe(P, n, r) {
+  if (!(n > 0)) return P;
+  const i = (r || 0) / 100;
+  return i > 0 ? P * i / (1 - Math.pow(1 + i, -n)) : P / n;
+}
+/* Próxima fecha de pago de la tarjeta para una compra hecha en «date», según su último estado de cuenta */
+function nextDueFor(card, date) {
+  const sts = latestStatements();
+  const st = sts.find(x => x.card === card) || sts[0];
+  const d = date || today();
+  if (st && st.due) {
+    const cut = +st.date.slice(8, 10), dueDay = +st.due.slice(8, 10);
+    const gap = (+st.due.slice(0, 4) * 12 + +st.due.slice(5, 7)) - (+st.date.slice(0, 4) * 12 + +st.date.slice(5, 7));
+    const m = +d.slice(5, 7) + (+d.slice(8, 10) > cut ? 1 : 0);
+    return dueOn(+d.slice(0, 4), m + gap, dueDay);
+  }
+  return dueOn(+d.slice(0, 4), +d.slice(5, 7) + 1, 10);
+}
+/* ¿Esta compra en cuotas ya aparece en un estado de cuenta o en los no facturados? Entonces manda el documento. */
+function txCovered(t) {
+  return [...latestStatements(), ...activeUnbilled()].some(st => (st.items || []).some(i =>
+    i.n > 1 && (i.cur || 'CLP') === (t.currency || 'CLP') && Math.abs((i.mo || i.vc * i.n) - t.amount) <= Math.max(2, t.amount * 0.005) &&
+    Math.abs(daysBetween(i.d, t.date)) <= 4));
+}
+function txEntries(t) {
+  const vcRaw = t.vc || cuotaDe(t.amount, t.cuotas, t.rate || 0);
+  const amt = t.currency === 'USD' ? Math.round(vcRaw * (t.fx || rate() || 0)) : Math.round(vcRaw);
+  const first = t.firstDue || nextDueFor(t.card, t.date);
+  return Array.from({length: t.cuotas}, (_, j) => ({ date: addToDate(first, j), amt }));
+}
+
 /* Estado de cada deuda a la fecha de hoy: cuotas pagadas se estiman por las fechas de pago ya pasadas */
 function debtItems() {
   const t = today(), out = [];
@@ -1726,6 +2156,13 @@ function debtItems() {
                paid: Math.max(i.k - 1, 0) + e.filter(x => x.date <= t).length, entries: e, end: e[e.length - 1].date,
                left: sumAmt(e.filter(x => x.date > t)), single: i.n <= 1 });
   }));
+  // Compras en cuotas registradas en Movimientos que aún no aparecen en un estado de cuenta
+  allTx().filter(x => x.cuotas > 1 && !x.dupOf && dir(x) < 0 && !txCovered(x)).forEach(x => {
+    const e = txEntries(x);
+    out.push({ type:'tx', id: x.id, name: displayName(x), where: x.card ? cardLabel(x.card) : 'Registrada en Movimientos', card: x.card, n: x.cuotas,
+               vc: e[0].amt, usd: x.currency === 'USD' ? (x.vc || cuotaDe(x.amount, x.cuotas, x.rate || 0)) : null,
+               paid: e.filter(y => y.date <= t).length, entries: e, end: e[e.length - 1].date, left: sumAmt(e.filter(y => y.date > t)), single: false });
+  });
   // Movimientos fijos marcados como pago de deuda
   fixedRecs().filter(f => f.debt && TIPOS[f.tipo].dir < 0).forEach(f => {
     const e = fixedDates(f, f.end || addToDate(t, 12)).map(date => ({ date, amt: fixedCLP(f) }));
@@ -1824,7 +2261,7 @@ function renderDeudas() {
       <div class="dl-meta"><span>Pagos hechos: ${d.paid}</span><span>Sin fecha de término</span></div></li>`;
     const pct = Math.round(d.paid / d.n * 100);
     const vcTxt = d.usd != null ? fmtUSD(d.usd) : d.uf != null ? `UF ${d.uf.toLocaleString('es-CL')}` : fmtCLP(d.vc);
-    return `<li tabindex="0" class="click" ${d.type === 'loan' ? `data-loan="${esc(d.id)}"` : d.type === 'fixed' ? `data-fixed-debt="${esc(d.id)}"` : `data-debt="${esc(d.sid)}:${d.idx}"`} aria-label="Editar ${esc(d.name)}">
+    return `<li tabindex="0" class="click" ${d.type === 'loan' ? `data-loan="${esc(d.id)}"` : d.type === 'fixed' ? `data-fixed-debt="${esc(d.id)}"` : d.type === 'tx' ? `data-txd="${esc(d.id)}"` : `data-debt="${esc(d.sid)}:${d.idx}"`} aria-label="Editar ${esc(d.name)}">
       <div class="dl-top"><span class="dl-name">${esc(d.name)}</span><b class="money">${fmtCLP(d.left)}</b></div>
       <div class="dl-bar" role="img" aria-label="${d.paid} de ${d.n} cuotas pagadas"><i style="width:${pct}%"></i></div>
       <div class="dl-meta"><span>Pagadas ${d.paid} de ${d.n}${d.where && manyPlaces ? ` (${esc(d.where)})` : ''}</span><span>${vcTxt} al mes, termina en ${esc(monthYear(d.end))}</span></div></li>`;
@@ -2527,12 +2964,18 @@ document.addEventListener('click', async e => {
   if (tx) { openTxEditor(tx.dataset.tx); return; }
   const sv = e.target.closest('[data-saving]');
   if (sv) { openSavingEditor(sv.dataset.saving); return; }
+  const smn = e.target.closest('[data-sub-manual]');
+  if (smn) { openManualSub(smn.dataset.subManual); return; }
   const rn = e.target.closest('[data-sub-rename]');
   if (rn) { openSubRename(rn.dataset.subRename); return; }
+  const iat = e.target.closest('[data-iat]');
+  if (iat) { S.ui.iaTab = iat.dataset.iat; render(); return; }
   const mf = e.target.closest('[data-mf]');
   if (mf) { S.ui.movFilter = mf.dataset.mf; render(); return; }
   const dbt = e.target.closest('[data-debt]');
   if (dbt) { const [sid, idx] = dbt.dataset.debt.split(':'); openItemEditor(sid, +idx); return; }
+  const txd = e.target.closest('[data-txd]');
+  if (txd) { openTxEditor(txd.dataset.txd); return; }
   const fxd = e.target.closest('[data-fixed-debt]');
   if (fxd) { openFixedEditor(fxd.dataset.fixedDebt); return; }
   const ln = e.target.closest('[data-loan]');
@@ -2550,8 +2993,11 @@ document.addEventListener('click', async e => {
   const act = a.dataset.act;
   if (act === 'go-review') { S.ui.movFilter = 'review'; go('movs'); }
   else if (act === 'go-cards') go('deudas');
+  else if (act === 'check-update') checkUpdate(true);
+  else if (act === 'go-buy') { S.ui.iaTab = 'compra'; go('ia'); }
   else if (act === 'add-loan') openLoanEditor(null);
   else if (act === 'fixed-list') openFixedList();
+  else if (act === 'add-sub') openManualSub(null);
   else if (act === 'hon-csv') {
     const y = ($('#honYear') && $('#honYear').value) || S.ui.honYear || today().slice(0, 4);
     const rowsC = [['fecha', 'pagador', 'bruto', 'retencion', 'liquido'], ...allTx().filter(t => t.mode === 'honorarios' && t.date.startsWith(y)).sort((a, b) => a.date.localeCompare(b.date))
@@ -2575,9 +3021,16 @@ document.addEventListener('click', async e => {
   }
   else if (act === 'build-prompt') { $('#promptTxt').value = buildPrompt(+$('#iaPeriod').value); $('#promptBox').classList.remove('hide'); }
   else if (act === 'copy-prompt') {
-    try { await navigator.clipboard.writeText($('#promptTxt').value); toast('Resumen copiado. Pégalo en Claude.'); }
-    catch { $('#promptTxt').select(); document.execCommand('copy'); toast('Resumen copiado.'); }
+    const ta = $(a.dataset.target || '#promptTxt');
+    try { await navigator.clipboard.writeText(ta.value); toast('Copiado. Pégalo en Claude.'); }
+    catch { ta.select(); document.execCommand('copy'); toast('Copiado.'); }
   }
+  else if (act === 'rec-prompt') {
+    const R = recommendations(), p = R.plan;
+    $('#recTxt').value = buildPrompt(3) + `\n\n## Plan estimado para ${monthLong(p.nym)}\n- Ingresos esperados: ${fmtCLP(p.inc)}\n- Cuotas y créditos: ${fmtCLP(p.debt)}\n- Pagos fijos: ${fmtCLP(p.fixed)}\n- Suscripciones: ${fmtCLP(p.subs)}\n- Gasto variable habitual: ${fmtCLP(p.variable)}\n- Margen: ${signed(p.margin)}\n\nMi app sugiere:\n${R.list.map(x => '- ' + x.title + ': ' + x.detail).join('\n')}\n\nDame un plan concreto para ${monthLong(p.nym)}: cuánto gastar por categoría, cuánto ahorrar y qué evitar.`;
+    $('#recBox').classList.remove('hide');
+  }
+  else if (act === 'buy-prompt') $('#buyBox').classList.remove('hide');
   else if (act === 'open-claude') window.open('https://claude.ai/new', '_blank', 'noopener');
   else if (act === 'save-answer') {
     const txt = $('#answerTxt').value.trim();
@@ -2606,6 +3059,13 @@ document.addEventListener('click', async e => {
   }
 });
 
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'buyForm') return;
+  e.preventDefault();
+  const q = readPurchaseForm();
+  if (!(q.price > 0)) { toast('Ingresa el precio.'); return; }
+  S.ui.lastQuery = q; showPurchase(q);
+});
 document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr[data-tx]')) { e.preventDefault(); openTxEditor(e.target.dataset.tx); }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-loan]')) { e.preventDefault(); openLoanEditor(e.target.dataset.loan); }
@@ -2634,6 +3094,11 @@ document.addEventListener('change', async e => {
   if (el.closest('#tab-ajustes') && !['cartolaFile', 'importFile', 'cartolaBank', 'connCode'].includes(el.id)) { readSettings(); if (el.dataset.bank) render(); return; }
   if (el.id === 'bankFilter') { S.ui.bankFilter = el.value; render(); }
   if (el.id === 'honYear') { S.ui.honYear = el.value; render(); }
+  if (el.closest('#buyForm')) {
+    const fe = $('#buyForm').elements;
+    $('#buyCq').classList.toggle('hide', fe.mode.value !== 'cuotas');
+    $('#buyRate').classList.toggle('hide', fe.interest.value !== 'si');
+  }
   if (el.matches('[data-import="card"]') && el.files[0]) { const fl = el.files[0]; el.value = ''; await importStatement(fl); return; }
   if (el.id === 'connCode' && el.value.trim()) {
     try { const j = decodeConn(el.value); S.settings.url = j.u; S.settings.token = j.t; save(); render(); toast('Dispositivo conectado. Sincronizando…'); sync(); }
@@ -2676,12 +3141,44 @@ document.addEventListener('keydown', e => {
 });
 window.addEventListener('offline', renderHeader);
 
-function showUpdate() {
+/* ---------- actualizaciones ---------- */
+function showUpdate(v) {
   if ($('#updBtn')) return;
   const b = document.createElement('button');
-  b.id = 'updBtn'; b.className = 'update'; b.textContent = 'Hay una versión nueva. Toca para actualizar.';
-  b.addEventListener('click', () => location.reload());
+  b.id = 'updBtn'; b.className = 'update';
+  b.textContent = v ? `Hay una versión nueva (${v}). Toca para actualizar.` : 'Hay una versión nueva. Toca para actualizar.';
+  b.addEventListener('click', () => forceUpdate(v));
   document.body.appendChild(b);
+}
+/* Pregunta a tu página qué versión está publicada (version.json), sin usar la caché */
+async function checkUpdate(manual) {
+  const st = $('#updStatus');
+  if (!location.protocol.startsWith('http')) { if (manual) toast('Abre la app desde su dirección web para buscar actualizaciones.'); return; }
+  if (!navigator.onLine) { if (manual) toast('Sin conexión. Intenta cuando tengas internet.'); return; }
+  if (st) st.textContent = 'Buscando…';
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status === 404 ? 'no encontré version.json en tu página; súbelo junto con index.html' : 'la página respondió ' + r.status);
+    const j = await r.json();
+    S.settings.lastUpdateCheck = Date.now(); save();
+    if (+j.version > APP_VERSION) {
+      if (st) st.textContent = `Versión ${j.version} disponible${j.notas ? ': ' + j.notas : ''}.`;
+      if (manual) forceUpdate(j.version); else showUpdate(j.version);
+    } else if (st) st.textContent = +j.version < APP_VERSION
+      ? `Tu página tiene publicada la versión ${j.version}, pero esta app ya es la ${APP_VERSION}. Sube a GitHub el version.json nuevo.`
+      : `Tienes la última versión publicada (${APP_VERSION}). Si te envié una más nueva, súbela a GitHub y vuelve a tocar el botón en 1 o 2 minutos.`;
+  } catch (e) {
+    if (st) st.textContent = 'No se pudo revisar: ' + e.message + '.';
+    else if (manual) toast('No se pudo revisar: ' + e.message);
+  }
+}
+/* Borra la copia guardada de la app (no tus datos) y recarga la versión nueva */
+async function forceUpdate(v) {
+  toast('Actualizando…');
+  try { clearTimeout(saveTimer); if (DB.db) await DB.set('state', { settings: S.settings, recs: S.recs }); } catch (e) { /* se guardó antes */ }
+  try { if ('serviceWorker' in navigator) { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); } } catch (e) { /* sin service worker */ }
+  try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } } catch (e) { /* sin caché */ }
+  location.replace(location.pathname + '?v=' + (v || Date.now()));
 }
 
 let toastTimer = null;
@@ -2713,10 +3210,18 @@ function toast(msg) {
     const hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js').then(reg => {
       // Al volver a la app se revisa si subiste una versión nueva a GitHub.
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        reg.update().catch(() => {});
+        if (Date.now() - (S.settings.lastUpdateCheck || 0) > 3600000) checkUpdate(false);
+      });
       navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) showUpdate(); });
     }).catch(() => {});
   }
+  // Revisión automática al abrir (como máximo una vez por hora)
+  if (Date.now() - (S.settings.lastUpdateCheck || 0) > 3600000) setTimeout(() => checkUpdate(false), 2500);
+  // Si venimos de una actualización, quitar el ?v= de la dirección
+  if (/[?&]v=/.test(location.search)) { history.replaceState(null, '', location.pathname); setTimeout(() => toast(`App actualizada a la versión ${APP_VERSION_LABEL}.`), 400); }
 })();
 </script>
 </body>

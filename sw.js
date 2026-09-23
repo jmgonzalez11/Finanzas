@@ -1,5 +1,5 @@
 // Service worker: permite abrir la app sin internet.
-const VERSION = 'finanzas-v5';
+const VERSION = 'finanzas-v7';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 const LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
@@ -9,8 +9,8 @@ const LIBS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(async c => {
-    await c.addAll(CORE);
-    // Lectores de Excel y PDF: se guardan para poder importar sin internet.
+    // cache: 'reload' evita guardar una copia vieja que el navegador tenía en memoria
+    await c.addAll(CORE.map(u => new Request(u, { cache: 'reload' })));
     await Promise.all(LIBS.map(u => c.add(new Request(u, { mode: 'cors' })).catch(() => {})));
   }));
   self.skipWaiting();
@@ -25,11 +25,15 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // Nunca guardar en caché la sincronización ni los indicadores.
+  // Nunca guardar en caché la sincronización, los indicadores ni el archivo de versión.
   if (/script\.google(usercontent)?\.com$|mindicador\.cl$|claude\.ai$/.test(url.hostname)) return;
-  if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put('./index.html', copy)); return r; })
-      .catch(() => caches.match('./index.html')));
+  if (url.pathname.endsWith('/version.json')) { e.respondWith(fetch(req, { cache: 'no-store' })); return; }
+  // La página siempre se pide primero a internet (sin caché); sin conexión se usa la copia guardada.
+  if (req.mode === 'navigate' || url.pathname.endsWith('/index.html')) {
+    e.respondWith(fetch(req, { cache: 'no-store' }).then(r => {
+      if (r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put('./index.html', copy)); }
+      return r;
+    }).catch(() => caches.match('./index.html')));
     return;
   }
   e.respondWith(caches.match(req).then(hit => {
