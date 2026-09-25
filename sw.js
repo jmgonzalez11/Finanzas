@@ -1,5 +1,5 @@
 // Service worker: permite abrir la app sin internet.
-const VERSION = 'finanzas-v11';
+const VERSION = 'finanzas-v12';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 const LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',

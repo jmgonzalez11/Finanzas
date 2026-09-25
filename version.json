@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "fecha": "2026-09-24",
-  "notas": "Lo facturado del mes en el Resumen, con ingresos y egresos nacionales e internacionales"
+  "notas": "Facturado: monto total facturado a pagar y deuda total internacional, tamaño ajustado"
 }
