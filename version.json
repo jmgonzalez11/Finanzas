@@ -1,5 +1,5 @@
 {
-  "version": 10,
+  "version": 11,
   "fecha": "2026-09-24",
-  "notas": "Deshacer cargas, categorizar, comprobar con el banco, tendencias, cierre de mes y alertas"
+  "notas": "Lo facturado del mes en el Resumen, con ingresos y egresos nacionales e internacionales"
 }

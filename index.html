@@ -309,6 +309,20 @@ details.mcard[open]>summary{border-bottom:1px solid var(--line)}
 .trend td,.trend th{white-space:nowrap}
 .trend td.num{font-variant-numeric:tabular-nums}
 details.alerts summary{cursor:pointer}
+.billed{display:grid;grid-template-columns:1fr;gap:12px;margin:6px 0 14px}
+.billed>div{display:grid;gap:2px}
+.billed span{color:var(--muted);font-size:14px}
+.billed .hero{margin:0;font-size:clamp(36px,11vw,56px)}
+.billed-usd{font-family:var(--round);font-weight:750;font-size:26px}
+.billed small{color:var(--muted);font-size:13px;line-height:1.35}
+.flows{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 12px;align-items:baseline;padding-top:12px;border-top:2px dashed var(--line)}
+.flows .fl-h{color:var(--muted);font-size:13px}
+.flows .fl-l{color:var(--muted);font-size:14px}
+.flows .money{font-family:var(--round);font-size:18px;font-weight:700}
+.flows .money small{display:block;font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted)}
+.flow-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:10px 0 0;font-size:14px;color:var(--muted)}
+.flow-line b{font-family:var(--round);font-size:18px}
+@media (min-width:520px){.billed{grid-template-columns:1.4fr 1fr}}
 /* deudas */
 .debts{list-style:none;margin:0;padding:0;display:grid;gap:2px}
 .debts li{background:var(--row);color:var(--rowtxt);padding:12px 14px}
@@ -417,8 +431,8 @@ details.more summary{cursor:pointer;color:var(--focus);font-weight:600;padding:1
 /* =====================================================================
    Datos base
    ===================================================================== */
-const APP_VERSION = 10;                       // debe coincidir con version.json
-const APP_VERSION_LABEL = '10 (septiembre 2026)';
+const APP_VERSION = 11;                       // debe coincidir con version.json
+const APP_VERSION_LABEL = '11 (septiembre 2026)';
 const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -1112,6 +1126,24 @@ const resHead = () => `<div class="res-head">
     <button class="link" data-act="import-history" style="font-size:14px">Historial de cargas</button></span>
   </div>`;
 
+/* ---------- lo facturado en el mes ---------- */
+function billedIn(ym) {
+  const sts = statements().filter(st => (st.to || st.date || '').startsWith(ym));
+  if (!sts.length) return null;
+  let clp_ = 0, charges = 0, usdBuys = 0, usdDue = null, dues = [];
+  sts.forEach(st => {
+    const T = st.bankTotals || {};
+    const cl = (st.items || []).filter(i => !i.cur && i.on !== false && (i.n <= 1 || i.k >= 1));
+    const ch = [T.D, T.E, T.G].every(v => v != null) ? T.D + T.E + T.G : cl.reduce((a, i) => a + i.vc, 0);
+    charges += ch;
+    clp_ += T.total != null ? T.total : ch;
+    usdBuys += T.usd != null ? T.usd : (st.items || []).filter(i => i.cur === 'USD').reduce((a, i) => a + i.vc, 0);
+    if (T.usdDue != null) usdDue = (usdDue || 0) + T.usdDue;
+    if (st.due) dues.push(st.due);
+  });
+  return { clp: clp_, charges, prevBalance: clp_ - charges, usdBuys: Math.round(usdBuys * 100) / 100, usdDue, due: dues.sort()[0] || '', cards: [...new Set(sts.map(st => cardLabel(st.card)))] };
+}
+
 /* ---------- meses pasados ---------- */
 function monthSummary(ym) {
   const list = monthTx(ym).filter(t => !t.dupOf);
@@ -1177,7 +1209,14 @@ function renderResumen() {
   const pend = monthTx(ym).filter(t => pendIds.has(t.id)).length;
   const sav = savingsRecs();
   const savTot = sav.reduce((a, s) => a + (Number(s.balance) || 0), 0);
-  const expIntl = monthTx(ym).filter(t => counted(t) && dir(t) < 0 && isIntl(t)).reduce((a, t) => a + clp(t), 0);
+  const mt = monthTx(ym).filter(t => counted(t));
+  const sumOf = (list, f) => list.reduce((a, t) => a + f(t), 0);
+  const expI = mt.filter(t => dir(t) < 0 && isIntl(t)), incI = mt.filter(t => dir(t) > 0 && isIntl(t));
+  const expIntl = sumOf(expI, clp), incIntl = sumOf(incI, clp);
+  const expIntlUsd = Math.round(sumOf(expI.filter(t => t.currency === 'USD'), t => t.amount) * 100) / 100;
+  const incIntlUsd = Math.round(sumOf(incI.filter(t => t.currency === 'USD'), t => t.amount) * 100) / 100;
+  const B = billedIn(ym);
+  const intlTxt = (usd, clpV) => usd ? `${fmtUSD(usd)} <small>(${fmtCLP(clpV)})</small>` : fmtCLP(clpV);
   let note;
   if (pct == null) note = T.exp ? 'Aún no hay ingresos registrados este mes.' : 'Sin movimientos este mes. Sincroniza o agrega uno con el botón +.';
   else if (pct > 100) note = `Los egresos superan a los ingresos en ${fmtCLP(T.exp - T.inc)}.`;
@@ -1187,14 +1226,23 @@ function renderResumen() {
   const bud = budgetStatus(ym);
 
   const blocks = {
-    slip: `<div class="slip-wrap"><article class="slip" aria-label="Flujo de caja">
-      <p class="slip-k">Flujo de caja de ${esc(monthOnly(ym))}</p>
+    slip: `<div class="slip-wrap"><article class="slip" aria-label="Facturado y flujo del mes">
+      ${B ? `<p class="slip-k">Facturado en ${esc(monthOnly(ym))}${B.cards.length ? ` (${esc(B.cards.join(', '))})` : ''}</p>
+      <div class="billed">
+        <div><span>Nacional</span><b class="hero exp">${fmtCLP(B.clp)}</b>
+          <small>${B.due ? `Pagar hasta el ${dmy(B.due)}. ` : ''}${Math.abs(B.prevBalance) >= 1 ? `Compras y cargos del período ${fmtCLP(B.charges)}; ${B.prevBalance < 0 ? 'saldo a favor' : 'saldo pendiente'} del período anterior ${B.prevBalance < 0 ? '−' : ''}${fmtCLP(Math.abs(B.prevBalance))}.` : ''}</small></div>
+        <div><span>Internacional</span><b class="billed-usd exp">${fmtUSD(B.usdBuys)}</b>
+          <small>${rate() ? `Cerca de ${fmtCLP(B.usdBuys * rate())} al dólar de hoy.` : ''}${B.usdDue != null ? ` A pagar ${fmtUSD(B.usdDue)} (descontando pagos ya hechos).` : ''}</small></div>
+      </div>`
+      : `<p class="slip-k">Flujo de caja de ${esc(monthOnly(ym))}</p>
       <p class="hero ${T.net >= 0 ? 'pos' : 'neg'}">${signed(T.net)}</p>
-      <div class="split">
-        <div><span>Ingresos</span><b class="inc money">${fmtCLP(T.inc)}</b></div>
-        <div><span>Egresos</span><b class="exp money">${fmtCLP(T.exp)}</b>
-          <small class="sub-split">Nacional ${fmtCLP(T.exp - expIntl)}<br>Internacional ${fmtCLP(expIntl)}</small></div>
+      <p class="slip-note" style="margin:-6px 0 12px">Cuando subas el estado de cuenta de ${esc(monthOnly(ym))}, aquí verás lo facturado.</p>`}
+      <div class="flows">
+        <div class="fl-h"></div><div class="fl-h">Nacional</div><div class="fl-h">Internacional</div>
+        <div class="fl-l">Ingresos</div><div class="inc money">${fmtCLP(T.inc - incIntl)}</div><div class="inc money">${intlTxt(incIntlUsd, incIntl)}</div>
+        <div class="fl-l">Egresos</div><div class="exp money">${fmtCLP(T.exp - expIntl)}</div><div class="exp money">${intlTxt(expIntlUsd, expIntl)}</div>
       </div>
+      ${B ? `<p class="flow-line"><span>Flujo del mes (ingresos − egresos)</span><b class="money ${T.net >= 0 ? 'inc' : 'exp'}">${signed(T.net)}</b></p>` : ''}
       <div class="meter" role="img" aria-label="${pct == null ? 'Sin ingresos' : pct + '% de los ingresos gastado'}"><i style="width:${Math.min(pct ?? (T.exp ? 100 : 0), 100)}%"></i></div>
       <p class="slip-note">${esc(note)}</p>
       <p class="slip-sav"><span>Ahorros</span><b class="money">${fmtCLP(savTot)}</b></p>
@@ -3270,7 +3318,8 @@ function bankTotals(lines) {
     G: num(/TOTAL CARGOS, COMISIONES, IMPUESTOS Y ABONOS\s*G?\s*\$\s*(-?\s?[\d.]+)/i),
     B: num(/TOTAL PAGOS A LA CUENTA\s*B?\s*\$\s*(-?\s?[\d.]+)/i),
     total: num(/MONTO TOTAL FACTURADO A PAGAR[^$\n]*\$\s*([\d.]+)/i),
-    usd: usd(/TOTAL DE COMPRAS\s*US\$\s*([\d.,]+)/i)
+    usd: usd(/TOTAL DE COMPRAS\s*US\$\s*([\d.,]+)/i),
+    usdDue: usd(/DEUDA TOTAL\s*US\$\s*([\d.,]+)/i)
   };
 }
 /* Compara lo leído con los totales del banco */

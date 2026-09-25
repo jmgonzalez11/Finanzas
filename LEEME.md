@@ -9,22 +9,142 @@ Tiempo estimado: unos 30 minutos la primera vez.
 
 ---
 
-## Cómo aplicar una actualización (2 minutos)
+## Cómo aplicar una actualización
 
-Cuando te entregue una versión nueva, normalmente solo cambian `index.html` y `sw.js`.
+Cada versión nueva trae los archivos `index.html`, `sw.js` y `version.json`. Si también cambia `Code.gs`, te lo diré.
 
-1. En el Mac, entra a tu repositorio en github.com.
-2. **Add file → Upload files**, arrastra `index.html` y `sw.js` (y cualquier otro archivo que te indique) y presiona **Commit changes**. GitHub reemplaza los archivos anteriores.
+1. En el Mac, entra a tu repositorio en github.com → **Add file → Upload files**.
+2. Arrastra **los tres archivos juntos** y presiona **Commit changes**.
 3. Espera 1 o 2 minutos a que GitHub Pages publique.
-4. Abre la app en el iPhone o el Mac. Aparecerá el aviso **«Hay una versión nueva. Toca para actualizar»**. Si no aparece, cierra la app por completo y vuelve a abrirla.
+4. En la app (iPhone o Mac): **Ajustes → Actualizaciones → Buscar actualización**. Si hay una versión nueva, se instala y la app se recarga sola.
 
-Para confirmar que tienes la última versión, revisa el número al final de **Ajustes**.
+La app también revisa sola al abrirse (como máximo una vez por hora) y muestra el aviso azul «Hay una versión nueva».
 
-Tus datos no se pierden al actualizar: quedan en cada dispositivo y en tu hoja de Google.
+**Tus datos no se pierden:** la actualización borra solo la copia guardada de la página, no tus movimientos ni ajustes.
 
-Si una versión trae cambios en `Code.gs`, te lo diré. En ese caso, además, pega el código nuevo en Apps Script y ve a **Implementar → Gestionar implementaciones → Editar → Versión: nueva**.
+**Si el botón dice que ya tienes la última versión, pero te envié una más nueva:**
+- lo más probable es que `version.json` no se haya subido,
+- o que GitHub aún no termine de publicar.
+
+**Si alguna vez `Code.gs` cambia:** pégalo en Apps Script y ve a **Implementar → Gestionar implementaciones → Editar → Versión: nueva**.
 
 ---
+
+## Novedades de la versión 11
+
+- **Lo facturado del mes en el Resumen.** Donde antes estaba el flujo de caja, ahora aparece lo facturado en el mes, según los estados de cuenta cuyo período termina en ese mes:
+  - **Nacional:** el total a pagar que informa el banco, con la fecha límite. Si hay saldo a favor o pendiente del período anterior, se indica aparte, junto a las compras y cargos del período.
+  - **Internacional:** las compras en dólares, su equivalente aproximado en pesos al dólar de hoy y lo que queda por pagar en dólares.
+- **Ingresos y egresos, nacionales e internacionales**, justo debajo. Los egresos internacionales se muestran en dólares y en pesos.
+- **Flujo del mes** (ingresos − egresos) en una línea bajo esa tabla.
+- **Meses sin estado de cuenta:** si aún no subes el estado de cuenta del mes, el Resumen muestra el flujo de caja como antes.
+
+**Diferencia entre ambas cifras:** lo facturado corresponde al período de la tarjeta (por ejemplo, 22/08 al 22/09), mientras que los ingresos y egresos corresponden al mes calendario. Por eso pueden diferir.
+
+## Novedades de la versión 10
+
+Todo funciona dentro de la app, con tus documentos. No necesita acceso a tus cuentas.
+
+- **Deshacer cargas:** Resumen → **Historial de cargas**. Muestra las últimas 12 cargas de documentos (estado de cuenta, no facturados o cartola) con su período y cantidad de movimientos. «Deshacer» deja todo como estaba antes de esa carga. El historial queda guardado en cada dispositivo.
+- **Comprobar contra el banco:** al subir un estado de cuenta, la app compara lo que leyó con los totales que informa el banco:
+  - compras en una cuota,
+  - cuotas del mes,
+  - comisiones, impuestos y abonos,
+  - pagos,
+  - compras internacionales.
+
+  Dice «Cuadra» o muestra la diferencia. En Deudas también verás el total a pagar según el banco.
+- **Abonos y reversas del estado de cuenta:** se leen y se registran como reembolsos. Por ejemplo, una reversa de Mercado Libre o un impuesto anulado.
+- **Categorizar gastos:** Movimientos → **Categorizar**, o desde Meses pasados.
+  - Lista los comercios sin categoría, de mayor a menor gasto.
+  - Al elegir una categoría, se aplica a todos sus cobros, pasados y futuros.
+  - «Aplicar sugeridas» confirma de una vez las sugerencias obvias.
+- **Subetiquetas:**
+  - Comida: delivery; café y panadería; almuerzos y colaciones; restaurantes y bares.
+  - Transporte: apps; bencina; estacionamiento; peajes y TAG; transporte público; vuelos y viajes.
+
+  Se ven en cada movimiento y en el detalle de Meses pasados.
+- **Tendencia de 6 meses:** al inicio de Meses pasados, una tabla de gasto por etiqueta con ▲ o ▼ cuando algo cambia más de 10% frente al mes anterior.
+- **Cierre de mes:** al abrir la app en un mes nuevo, aparece el cierre del mes anterior. Muestra el resultado, dónde se fue el dinero comparado con lo habitual y un presupuesto propuesto para el mes que empieza (editable, se guarda con un toque). También puedes abrirlo desde cada mes en Meses pasados.
+- **Alertas:** en el Resumen. Avisan de:
+  - cobros inusualmente altos en un comercio,
+  - posibles cobros repetidos (mismo comercio, monto y día),
+  - cargos nuevos de la tarjeta frente al estado de cuenta anterior,
+  - suscripciones nuevas,
+  - alzas de precio.
+
+  Cada alerta se puede descartar.
+
+**Para actualizar:** sube `index.html`, `sw.js` y `version.json`, y en la app ve a Ajustes → **Buscar actualización**. `Code.gs` no cambió.
+
+## Novedades de la versión 9
+
+**Cargas sin duplicados («carga basal»).** Cada documento que subes pasa a ser la base de su período:
+- **Estado de cuenta de tarjeta (PDF):** reemplaza todo lo cargado antes desde documentos de esa tarjeta en el período facturado (por ejemplo, del 24/07 al 21/08). Además, sus compras de ese período pasan a Movimientos, y sus pagos quedan como «pago de tarjeta».
+- **No facturados:** reemplazan lo cargado antes para esa tarjeta desde el día siguiente al último período facturado hasta la fecha del documento.
+- **Cartola de cuenta (PDF, Excel o CSV):** reemplaza lo cargado antes desde cartolas de esa cuenta entre sus fechas.
+
+Subir el mismo documento dos veces, o uno más nuevo que se superpone, ya no duplica nada. Tus correcciones de nombre, categoría, cuotas y tipo se mantienen al recargar. Los correos que coinciden con un documento quedan ocultos detrás del documento.
+
+**Importar desde la página principal:** Resumen → **«Importar cartola o estado de cuenta»**. La app reconoce sola si es un estado de cuenta, no facturados o una cartola en PDF. Si es Excel o CSV, te pregunta qué es.
+
+**Transferencias entre tus cuentas:** ya no se cuentan como gasto.
+- Se reconocen por el texto (traspaso, cuenta propia, entre cuentas, mismo titular) o por tus nombres en Ajustes.
+- También se reconocen al emparejarlas: si sale un monto de una cuenta y entra el mismo monto en otra, con ±2 días de diferencia, ambas quedan como «entre mis cuentas».
+- Los pagos de tarjeta desde la cuenta tampoco cuentan como gasto.
+- Si una transferencia quedó mal, edítala, elige «Entre mis cuentas» y marca «usar este tipo en futuros movimientos».
+
+**Meses pasados:** Resumen → **Meses pasados** (en el Mac, también en la barra lateral). Para cada mes muestra:
+- ingresos por etiqueta,
+- gastos únicos por etiqueta (Comida, Transporte, Compras, etc.),
+- suscripciones por etiqueta (Streaming, Productividad, IA, Lectura),
+- compras en cuotas,
+- pagos de tarjetas y cuentas,
+- movimientos entre tus cuentas,
+- el monto final.
+
+**Etiquetas nuevas:** Streaming (Netflix, Spotify, Prime Video, YouTube), Productividad (Microsoft 365, Dropbox, iCloud, TextExpander, Fantastical), IA (ChatGPT, Claude, Superwhisper) y Lectura (Audible, Storytel, Patreon).
+
+**Para actualizar:** sube `index.html`, `sw.js` y `version.json`, y en la app ve a Ajustes → **Buscar actualización**. `Code.gs` no cambió.
+
+## Novedades de la versión 8
+
+- **Diseño oscuro con fondo negro.** Está en Ajustes → Diseño, con tres opciones: Claro, Oscuro o Según el sistema. «Según el sistema» cambia solo cuando tu iPhone o Mac pasa a modo oscuro.
+- Los colores de ingresos, egresos, etiquetas y gráficos están ajustados para leerse bien sobre negro.
+- Cada dispositivo recuerda su propio diseño.
+
+**Para actualizar:** sube `index.html`, `sw.js` y `version.json` a GitHub. Luego, en la app, ve a Ajustes → **Buscar actualización**.
+
+## Novedades de la versión 6
+
+**Cómo actualizar:**
+1. Sube `index.html` y `sw.js` a GitHub.
+2. En Apps Script, reemplaza `Code.gs` (ahora reconoce «en N cuotas» en los correos).
+3. Ve a **Implementar → Gestionar implementaciones → Editar → Versión: nueva**.
+
+No hace falta volver a ejecutar `configurar`.
+
+**Qué hay de nuevo:**
+
+- **¿En cuotas?** Todo gasto tiene la pregunta Sí/No. Si marcas Sí, indicas:
+  - el número de cuotas,
+  - si tiene interés (y la tasa mensual),
+  - la tarjeta.
+
+  El valor de la cuota y la fecha de la primera cuota se calculan solos, según el corte de tu tarjeta. La compra aparece en Deudas. Cuando esa misma compra llega en un estado de cuenta o en los no facturados (mismo monto, ±4 días), manda el documento y no se cuenta dos veces.
+- **Etiquetas de categoría** (Transporte, Comida, etc.) en cada ingreso y egreso, y una etiqueta con el número de cuotas.
+- **Suscripciones a mano:** en la pestaña Suscripciones puedes:
+  - agregar una que falte,
+  - quitar una detectada por error. Sus cobros siguen como gastos normales.
+
+  Si agregas una suscripción, indica cómo aparece en el banco para que los cobros reales se junten con ella.
+- **Análisis** ahora tiene cuatro secciones:
+  - **Resumen del mes:** cada categoría con su monto, su % del total y si está similar, levemente mayor/menor o bastante mayor/menor que lo habitual. En el mes en curso se compara con lo habitual a la misma altura del mes. Este resumen también se incluye en el texto para Claude.
+  - **Recomendaciones:** plan para el mes siguiente (ingresos esperados, cuotas, pagos fijos, suscripciones, gasto habitual y margen) y recomendaciones concretas, con opción de pedirle a Claude un plan detallado.
+  - **Consulta de compra:** escribes qué quieres comprar, el precio y cómo lo pagarías (contado o cuotas, con o sin interés). La app responde si se ve manejable, posible con cuidado o no recomendable ahora, y la mejor forma de hacerlo. Además arma la consulta para Claude. También se abre desde el Resumen con **«¿Me conviene una compra?»**.
+  - **Honorarios.**
+
+  En la consulta de compra, los umbrales son: cuotas y créditos bajo 30% de tus ingresos, y cuota bajo la mitad de tu margen mensual. Es un cálculo con tus datos, no una asesoría financiera.
 
 ## Novedades de la versión 5 (requiere actualizar también Code.gs)
 
@@ -240,4 +360,4 @@ En Apps Script, la función `probarLector` muestra en el registro qué entiende 
 | Archivo | Dónde va |
 |---|---|
 | `Code.gs`, `appsscript.json` | Proyecto de Apps Script |
-| `index.html`, `sw.js`, `manifest.json`, `icon-192.png`, `icon-512.png` | GitHub Pages u otro hosting `https` |
+| `index.html`, `sw.js`, `version.json`, `manifest.json`, `icon-192.png`, `icon-512.png` | GitHub Pages u otro hosting `https` |
