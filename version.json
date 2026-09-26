@@ -1,5 +1,5 @@
 {
-  "version": 12,
-  "fecha": "2026-09-24",
-  "notas": "Facturado: monto total facturado a pagar y deuda total internacional, tamaño ajustado"
+  "version": 13,
+  "fecha": "2026-09-25",
+  "notas": "Dos cajas (mes en curso y mes facturado), ingresos por mes, ahorro, créditos en el Resumen y borrar todo"
 }
